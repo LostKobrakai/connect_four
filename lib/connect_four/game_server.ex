@@ -54,14 +54,12 @@ defmodule ConnectFour.GameServer do
         {:reply, :ok, %{state | game: game}, {:continue, :push_to_clients}}
 
       {:won, _, game} ->
-        Enum.each(state.clients, fn {client, name} ->
-          send(client, {__MODULE__, %{name: name, game_state: game}})
-          Process.unlink(client)
-        end)
-
         GenServer.reply(from, :ok)
-
         {:stop, {:shutdown, :won}, %{state | game: game}}
+
+      {:draw, game} ->
+        GenServer.reply(from, :ok)
+        {:stop, {:shutdown, :draw}, %{state | game: game}}
     end
   end
 
@@ -77,4 +75,14 @@ defmodule ConnectFour.GameServer do
 
     {:noreply, state}
   end
+
+  @impl GenServer
+  def terminate({:shutdown, _reason}, state) do
+    Enum.each(state.clients, fn {client, name} ->
+      send(client, {__MODULE__, %{name: name, game_state: state.game}})
+      Process.unlink(client)
+    end)
+  end
+
+  def terminate(_reason, _state), do: :ok
 end

@@ -6,9 +6,13 @@ defimpl Enumerable, for: ConnectFour.State.Board do
   def slice(%Board{}), do: {:error, __MODULE__}
 
   def reduce(%Board{} = board, acc, fun) do
-    board.state
-    |> Tuple.to_list()
-    |> Enum.map(&Tuple.to_list/1)
-    |> Enumerable.reduce(acc, fun)
+    nested_lists =
+      for x <- 1..board.columns//1 do
+        for y <- 1..board.rows//1 do
+          Map.fetch!(board.state, {x - 1, y - 1})
+        end
+      end
+
+    Enumerable.reduce(nested_lists, acc, fun)
   end
 end

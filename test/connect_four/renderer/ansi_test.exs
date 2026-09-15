@@ -119,6 +119,50 @@ defmodule ConnectFour.Renderer.AnsiTest do
                [cell(:yellow), " ", cell(:red)]
              ]
     end
+
+    test "renders draw game" do
+      board = Board.new(columns: 3, rows: 4)
+      game = Game.new(board)
+      {:ok, game} = Game.add_player(game, "Benjamin")
+      {:ok, game} = Game.add_player(game, "Bruce")
+
+      moves =
+        for half_col <- 0..5//2,
+            a = rem(half_col, 3),
+            b = rem(half_col + 1, 3),
+            move <- [
+              %{player: "Benjamin", col: a},
+              %{player: "Bruce", col: b},
+              %{player: "Benjamin", col: a},
+              %{player: "Bruce", col: b}
+            ] do
+          move
+        end
+
+      {last_move, moves} = List.pop_at(moves, -1)
+
+      game =
+        Enum.reduce(moves, game, fn move, game ->
+          {:continue, game} = Game.drop_disc(game, move.player, move.col)
+          game
+        end)
+
+      {:draw, %Game{} = game} = Game.drop_disc(game, last_move.player, last_move.col)
+
+      assert Ansi.layout(game) == [
+               [
+                 cell(:red),
+                 " ",
+                 cell(:yellow),
+                 " ",
+                 cell(:red)
+                 | player(:yellow, {:draw, "Benjamin"})
+               ],
+               [cell(:red), " ", cell(:yellow), " ", cell(:red) | player(:red, {:draw, "Bruce"})],
+               [cell(:yellow), " ", cell(:red), " ", cell(:yellow)],
+               [cell(:yellow), " ", cell(:red), " ", cell(:yellow)]
+             ]
+    end
   end
 
   describe "buttons/2" do
@@ -170,6 +214,10 @@ defmodule ConnectFour.Renderer.AnsiTest do
 
   defp player(color, {:turn, name}) do
     ["   ", [color, "●", :reset], " ", [name, " ", "<"]]
+  end
+
+  defp player(color, {:draw, name}) do
+    ["   ", [color, "●", :reset], " ", [name, " ", "🤝"]]
   end
 
   defp player(color, {:won, name}) do

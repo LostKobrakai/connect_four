@@ -25,8 +25,8 @@ defmodule ConnectFour.State.Game do
   end
 
   def players_turn?(%__MODULE__{} = game, name) do
-    with {:ok, player_index} <- player_index(game, name),
-         :ok <- players_turn(game, player_index) do
+    with {:ok, player_index} <- fetch_player_index(game, name),
+         :ok <- ensure_players_turn(game, player_index) do
       true
     else
       _ -> false
@@ -34,27 +34,32 @@ defmodule ConnectFour.State.Game do
   end
 
   def drop_disc(%__MODULE__{} = game, name, column_index) do
-    with {:ok, player_index} <- player_index(game, name),
-         :ok <- players_turn(game, player_index),
+    with {:ok, player_index} <- fetch_player_index(game, name),
+         :ok <- ensure_players_turn(game, player_index),
          {:ok, coordinate, %__MODULE__{} = game} <-
            drop_on_board(game, column_index, player_index) do
-      if Board.won?(game.board, coordinate, player_index) do
-        {:won, name, %__MODULE__{game | state: {:won, player_index}}}
-      else
-        next_player_index = rem(player_index + 1, map_size(game.players))
-        {:continue, %__MODULE__{game | state: {:turn, next_player_index}}}
+      cond do
+        Board.won_by?(game.board, coordinate, player_index) ->
+          {:won, name, %__MODULE__{game | state: {:won, player_index}}}
+
+        not Board.moves_left?(game.board) ->
+          {:draw, %__MODULE__{game | state: :draw}}
+
+        true ->
+          next_player_index = rem(player_index + 1, map_size(game.players))
+          {:continue, %__MODULE__{game | state: {:turn, next_player_index}}}
       end
     end
   end
 
-  defp player_index(%__MODULE__{} = game, name) do
+  defp fetch_player_index(%__MODULE__{} = game, name) do
     case Map.fetch(game.players, name) do
       {:ok, player_index} -> {:ok, player_index}
       :error -> {:error, :invalid_player}
     end
   end
 
-  defp players_turn(%__MODULE__{} = game, player_index) do
+  defp ensure_players_turn(%__MODULE__{} = game, player_index) do
     case game.state do
       {:turn, ^player_index} -> :ok
       _ -> {:error, :not_player_turn}
@@ -62,9 +67,8 @@ defmodule ConnectFour.State.Game do
   end
 
   defp drop_on_board(%__MODULE__{board: board} = game, column_index, player_index) do
-    case Board.drop_disc(board, column_index, player_index) do
-      {:ok, coordinate, board} -> {:ok, coordinate, %__MODULE__{game | board: board}}
-      {:error, :column_full, _} -> {:error, :column_full}
+    with {:ok, coordinate, board} <- Board.drop_disc(board, column_index, player_index) do
+      {:ok, coordinate, %__MODULE__{game | board: board}}
     end
   end
 end

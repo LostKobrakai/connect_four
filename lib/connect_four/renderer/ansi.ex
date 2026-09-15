@@ -42,6 +42,7 @@ defmodule ConnectFour.Renderer.Ansi do
       Enum.map(game.players, fn {name, player_index} ->
         formatted_name =
           case game.state do
+            :draw -> [name, " ", "🤝"]
             {:won, ^player_index} -> [name, " ", "👑"]
             {:turn, ^player_index} -> [name, " ", "<"]
             _ -> name

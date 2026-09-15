@@ -120,6 +120,47 @@ defmodule ConnectFour.GameServerTest do
 
       refute Process.alive?(game)
     end
+
+    test "can draw a game on drop" do
+      {:ok, game} = GameServer.start_link([])
+
+      ref = Process.monitor(game)
+
+      :ok = GameServer.join(game, "Benjamin")
+      :ok = GameServer.join(game, "Bruce")
+
+      moves =
+        for half_col <- 0..13//2,
+            a = rem(half_col, 7),
+            b = rem(half_col + 1, 7),
+            move <- [
+              %{player: "Benjamin", col: a},
+              %{player: "Bruce", col: b},
+              %{player: "Benjamin", col: a},
+              %{player: "Bruce", col: b},
+              %{player: "Benjamin", col: a},
+              %{player: "Bruce", col: b}
+            ] do
+          move
+        end
+
+      {last_move, moves} = List.pop_at(moves, -1)
+
+      Enum.each(moves, fn move ->
+        :ok = GameServer.drop_disc(game, move.player, move.col)
+      end)
+
+      flush_messages()
+
+      :ok = GameServer.drop_disc(game, last_move.player, last_move.col)
+
+      assert_received {GameServer, %{name: player, game_state: %Game{} = game_state}}
+                      when game_state.state == :draw and player == last_move.player
+
+      assert_receive {:DOWN, ^ref, :process, ^game, {:shutdown, :draw}}
+
+      refute Process.alive?(game)
+    end
   end
 
   describe "game_state/3" do
@@ -130,6 +171,14 @@ defmodule ConnectFour.GameServerTest do
       :ok = GameServer.join(game, "Bruce")
 
       assert %Game{} = GameServer.game_state(game)
+    end
+  end
+
+  def flush_messages do
+    receive do
+      _ -> flush_messages()
+    after
+      0 -> :ok
     end
   end
 end
