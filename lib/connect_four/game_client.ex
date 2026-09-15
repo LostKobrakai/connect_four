@@ -19,7 +19,11 @@ defmodule ConnectFour.GameClient do
 
   @impl GenServer
   def handle_info({{:button, index}, %{type: :click}}, state) do
-    ConnectFour.GameServer.drop_disc(state.server, state.name, index)
+    case ConnectFour.GameServer.drop_disc(state.server, state.name, index) do
+      :ok -> :ok
+      {:error, _} = err -> Kino.Frame.append(state.frame, err)
+    end
+
     {:noreply, state}
   end
 
