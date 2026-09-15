@@ -24,12 +24,17 @@ defmodule ConnectFour.GameServer do
   # Server Callbacks
 
   @impl GenServer
-  def init(_init_arg) do
+  def init(init_arg) do
+    lobby_registration = Keyword.get(init_arg, :lobby_registration)
     Process.set_label(:game)
     board = Board.new()
     game = Game.new(board)
 
-    {:ok, %{game: game, clients: []}}
+    if lobby_registration do
+      lobby_registration.register()
+    end
+
+    {:ok, %{game: game, clients: [], lobby_registration: lobby_registration}}
   end
 
   @impl GenServer
@@ -38,6 +43,11 @@ defmodule ConnectFour.GameServer do
       {:ok, game} ->
         Process.link(pid)
         next_state = %{state | game: game, clients: [{pid, name} | state.clients]}
+
+        if state.lobby_registration && game.state != :setup do
+          state.lobby_registration.unregister()
+        end
+
         {:reply, :ok, next_state, {:continue, :push_to_clients}}
 
       error ->
