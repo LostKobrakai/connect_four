@@ -57,9 +57,6 @@ defmodule ConnectFour.GameServer do
 
   def handle_call({:drop_disc, name, column}, from, state) do
     case Game.drop_disc(state.game, name, column) do
-      {:error, :not_player_turn} ->
-        {:reply, {:error, :not_player_turn}, state}
-
       {:continue, game} ->
         {:reply, :ok, %{state | game: game}, {:continue, :push_to_clients}}
 
@@ -70,6 +67,9 @@ defmodule ConnectFour.GameServer do
       {:draw, game} ->
         GenServer.reply(from, :ok)
         {:stop, {:shutdown, :draw}, %{state | game: game}}
+
+      {:error, _} = error ->
+        {:reply, error, state}
     end
   end
 
