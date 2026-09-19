@@ -34,7 +34,7 @@ defmodule ConnectFour.GameServerTest do
 
       :ok = GameServer.join(game, "Benjamin")
 
-      assert_received {GameServer, %{name: "Benjamin", game_state: %Game{}}}
+      assert_receive {GameServer, %{name: "Benjamin", game_state: %Game{}}}
     end
 
     test "multiple player can join a game" do
@@ -44,10 +44,10 @@ defmodule ConnectFour.GameServerTest do
 
       assert :ok = GameServer.join(game, "Bruce")
 
-      assert_received {GameServer, %{name: "Benjamin", game_state: %Game{} = game_state}}
+      assert_receive {GameServer, %{name: "Benjamin", game_state: %Game{} = game_state}}
       assert game_state.player_indexes == [1]
 
-      assert_received {GameServer, %{name: "Benjamin", game_state: %Game{} = game_state}}
+      assert_receive {GameServer, %{name: "Benjamin", game_state: %Game{} = game_state}}
       assert game_state.player_indexes == []
     end
 
@@ -85,8 +85,8 @@ defmodule ConnectFour.GameServerTest do
 
       assert :ok = GameServer.drop_disc(game, "Benjamin", 0)
 
-      assert_received {GameServer, %{name: "Benjamin", game_state: %Game{} = game_state}}
-                      when game_state.state == {:turn, 1}
+      assert_receive {GameServer, %{name: "Benjamin", game_state: %Game{} = game_state}}
+                     when game_state.state == {:turn, 1}
     end
 
     test "cannot drop out of turn" do
@@ -113,8 +113,8 @@ defmodule ConnectFour.GameServerTest do
       :ok = GameServer.drop_disc(game, "Bruce", 1)
       :ok = GameServer.drop_disc(game, "Benjamin", 0)
 
-      assert_received {GameServer, %{name: "Benjamin", game_state: %Game{} = game_state}}
-                      when game_state.state == {:won, 0}
+      assert_receive {GameServer, %{name: "Benjamin", game_state: %Game{} = game_state}}
+                     when game_state.state == {:won, 0}
 
       assert_receive {:DOWN, ^ref, :process, ^game, {:shutdown, :won}}
 
@@ -154,8 +154,8 @@ defmodule ConnectFour.GameServerTest do
 
       :ok = GameServer.drop_disc(game, last_move.player, last_move.col)
 
-      assert_received {GameServer, %{name: player, game_state: %Game{} = game_state}}
-                      when game_state.state == :draw and player == last_move.player
+      assert_receive {GameServer, %{name: player, game_state: %Game{} = game_state}}
+                     when game_state.state == :draw and player == last_move.player
 
       assert_receive {:DOWN, ^ref, :process, ^game, {:shutdown, :draw}}
 
