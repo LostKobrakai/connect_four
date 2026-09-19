@@ -1,4 +1,4 @@
-defmodule ConnectFour.GameClient do
+defmodule ConnectFour.GameClient.Livebook do
   use GenServer, restart: :temporary
 
   def start_link(init_arg) do
