@@ -3,7 +3,8 @@ defmodule ConnectFour.Application do
 
   def start(_type, _args) do
     children = [
-      ConnectFour.GameSupervisor
+      ConnectFour.GameSupervisor,
+      ConnectFour.GameClient.Web
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one)
