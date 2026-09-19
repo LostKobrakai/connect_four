@@ -7,7 +7,9 @@ defmodule ConnectFour.State.Board do
     streak_length = Keyword.get(opts, :streak_length, 4)
 
     state =
-      for x <- 1..columns//1, y <- 1..rows//1, into: %{} do
+      for x <- 1..columns//1,
+          y <- 1..rows//1,
+          into: %{} do
         {{x - 1, y - 1}, nil}
       end
 

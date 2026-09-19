@@ -11,9 +11,8 @@ defmodule ConnectFour.GameClient do
     frame = Keyword.fetch!(init_arg, :frame)
     Process.set_label({:game_client, name})
 
-    server = ConnectFour.GameSupervisor.get_game_server()
-    ConnectFour.GameServer.join(server, name)
-
+    {:ok, server} = ConnectFour.GameSupervisor.fetch_game_server()
+    :ok = ConnectFour.GameServer.join(server, name)
     {:ok, %{server: server, name: name, frame: frame}}
   end
 

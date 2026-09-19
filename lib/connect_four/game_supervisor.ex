@@ -15,19 +15,16 @@ defmodule ConnectFour.GameSupervisor do
     Supervisor.init(children, strategy: :one_for_one)
   end
 
-  def get_game_server() do
+  def fetch_game_server() do
     case Registry.lookup(ConnectFour.GameSupervisor.Lobby, :lobby) do
       [] ->
-        {:ok, game_server} =
-          DynamicSupervisor.start_child(
-            ConnectFour.GameSupervisor.Dynamic,
-            {ConnectFour.GameServer, lobby_registration: __MODULE__}
-          )
-
-        game_server
+        DynamicSupervisor.start_child(
+          ConnectFour.GameSupervisor.Dynamic,
+          {ConnectFour.GameServer, lobby_registration: __MODULE__}
+        )
 
       [{game_server, _} | _] ->
-        game_server
+        {:ok, game_server}
     end
   end
 
